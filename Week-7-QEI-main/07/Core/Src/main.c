@@ -49,8 +49,8 @@ UART_HandleTypeDef huart2;
 /* USER CODE BEGIN PV */
 uint64_t _micros = 0;
 float EncoderVel = 0;
-int PWMOut1 = 0;
-int PWMOut2 = 0;
+float PWMOut1 = 0;
+float PWMOut2 = 0;
 uint64_t Timestamp_Encoder = 0;
 float error = 0;
 float prever1 = 0;
@@ -59,7 +59,7 @@ float kp = 0;
 float ki = 0;
 float kd = 0;
 float req = 0;
-float reqq =0;
+float reqq = 0;
 float envel = 0;
 /* USER CODE END PV */
 
@@ -136,40 +136,25 @@ int main(void) {
 //		}
 //Add LPF?
 		if (micros() - Timestamp_Encoder >= 1000) {
-
-			if (reqq < 0) {
+			Timestamp_Encoder = micros();
+			EncoderVel = (EncoderVel * 99 + EncoderVelocity_Update()) / 100.0;
+			error = reqq - EncoderVel;
+			sumer = sumer + error;
+			PWMOut1 = kp * error + ki * sumer + kd * (error - prever1);
+			prever1 = error;
+			if (PWMOut1 < 0) {
 				__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, PWMOut2);
-				__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, PWMOut1);
+				__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, (-1)*PWMOut1);
 			}
-			if (reqq > 0) {
+			if (PWMOut1 > 0) {
 				__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, PWMOut1);
 				__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, PWMOut2);
 			}
-			if (reqq == 0) {
+			if (PWMOut1 == 0) {
 				__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
 				__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
 			}
-//			if (EncoderVel < 0) {
-//				envel = EncoderVel * -1;
-//			}
-//			if (EncoderVel > 0) {
-//							envel = EncoderVel ;
-//						}
-//			if (reqq < 0) {
-//				req = reqq * -1;
-//			}
-//			if (reqq > 0) {
-//							req = reqq ;
-//						}
-//			Timestamp_Encoder = micros();
-			EncoderVel = (EncoderVel * 99 + EncoderVelocity_Update()) / 100.0;
-//			error = req - envel;
-//			sumer = sumer + error;
-//			PWMOut1 = kp*error + ki*sumer + kd*(error-prever1);
-//			prever1 = error;
-//			if (PWMOut1 >= 10000) {
-//				PWMOut1 = 10000;
-//			}
+
 		}
 
 	}
